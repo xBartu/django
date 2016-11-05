@@ -38,11 +38,11 @@ def set_language(request):
     """
     next = request.POST.get('next', request.GET.get('next'))
     if ((next or not request.is_ajax()) and
-            not is_safe_url(url=next, host=request.get_host(), require_https=request.is_secure())):
+            not is_safe_url(url=next, allowed_hosts={request.get_host()}, require_https=request.is_secure())):
         next = request.META.get('HTTP_REFERER')
         if next:
             next = urlunquote(next)  # HTTP_REFERER may be encoded.
-        if not is_safe_url(url=next, host=request.get_host(), require_https=request.is_secure()):
+        if not is_safe_url(url=next, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
             next = '/'
     response = http.HttpResponseRedirect(next) if next else http.HttpResponse(status=204)
     if request.method == 'POST':
@@ -356,7 +356,8 @@ class JavaScriptCatalog(View):
         domain = kwargs.get('domain', self.domain)
         # If packages are not provided, default to all installed packages, as
         # DjangoTranslation without localedirs harvests them all.
-        packages = kwargs.get('packages', '').split('+') or self.packages
+        packages = kwargs.get('packages', '')
+        packages = packages.split('+') if packages else self.packages
         paths = self.get_paths(packages) if packages else None
         self.translation = DjangoTranslation(locale, domain=domain, localedirs=paths)
         context = self.get_context_data(**kwargs)
